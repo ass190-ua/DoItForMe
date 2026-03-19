@@ -1,6 +1,6 @@
 # Story 1.1: Establish Identity Service Foundation
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,35 +19,35 @@ so that registration and login can be delivered on a stable backend base.
 
 ## Tasks / Subtasks
 
-- [ ] Initialize the FastAPI project scaffold with `uv` and lock the baseline dependency set (AC: 1, 2)
-  - [ ] Create the project root using the architecture-selected manual scaffold (`uv init --name doitforme-api`)
-  - [ ] Add runtime dependencies: `fastapi`, `uvicorn[standard]`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `pydantic`, `pydantic-settings`, `python-jose[cryptography]`, `passlib[bcrypt]`
-  - [ ] Add test dependencies: `pytest`, `pytest-asyncio`, `httpx`
-  - [ ] Commit to the architecture-selected backend-only project layout rooted at `doitforme-api/app/`
-- [ ] Establish the shared application skeleton and versioned API entrypoints (AC: 1, 3)
-  - [ ] Create `app/main.py` as the ASGI entrypoint
-  - [ ] Create `app/api/deps.py` and `app/api/v1/router.py`
-  - [ ] Wire `/api/v1` routing and create minimal router aggregation without implementing registration/login endpoints yet
-  - [ ] Add `/health` and `/ready` endpoints as part of the operational baseline
-- [ ] Implement environment-based configuration and shared core utilities (AC: 2, 3)
-  - [ ] Create `app/core/config.py` using `pydantic-settings` and environment variables
-  - [ ] Provide `.env` and `.env.example` with the minimum required settings for local development
-  - [ ] Create `app/core/response.py` and `app/core/exceptions.py` for the standardized API envelope and centralized exception mapping
-  - [ ] Create `app/core/logging.py` for structured logging primitives that avoid secrets and raw tokens
-- [ ] Implement persistence foundations for identity work (AC: 2)
-  - [ ] Create `app/db/base.py` and `app/db/session.py` for SQLAlchemy async base metadata, engine, and session lifecycle
-  - [ ] Initialize Alembic and configure it for the project database connection
-  - [ ] Create the initial user persistence shape needed by auth foundations (`app/models/user.py`) aligned with the `users` table contract
-  - [ ] Keep transaction ownership in the service layer and persistence access in repositories only
-- [ ] Implement base security utilities without delivering auth endpoints yet (AC: 3, 4)
-  - [ ] Create `app/core/security.py` for password hashing helpers and JWT encode/decode primitives
-  - [ ] Define shared auth-related dependencies/guards stubs needed for later protected routes
-  - [ ] Align JWT payload handling to include `sub`, `email`, `role`, `iat`, and `exp`
-  - [ ] Leave registration and login endpoint/service behavior for Stories 1.2 and 1.3
-- [ ] Establish the test and delivery baseline for follow-on stories (AC: 1, 4)
-  - [ ] Create `tests/conftest.py` plus initial test package structure mirroring app layers
-  - [ ] Add smoke coverage for app startup, health/readiness endpoints, and shared dependency wiring
-  - [ ] Add Docker/local runtime scaffolding (`Dockerfile`, `docker-compose.yml`) and CI placeholders consistent with the architecture baseline
+- [x] Initialize the FastAPI project scaffold with `uv` and lock the baseline dependency set (AC: 1, 2)
+  - [x] Create the project root using the architecture-selected manual scaffold (`uv init --name doitforme-api`)
+  - [x] Add runtime dependencies: `fastapi`, `uvicorn[standard]`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `pydantic`, `pydantic-settings`, `python-jose[cryptography]`, `passlib[bcrypt]`
+  - [x] Add test dependencies: `pytest`, `pytest-asyncio`, `httpx`
+  - [x] Commit to the architecture-selected backend-only project layout rooted at `doitforme-api/app/`
+- [x] Establish the shared application skeleton and versioned API entrypoints (AC: 1, 3)
+  - [x] Create `app/main.py` as the ASGI entrypoint
+  - [x] Create `app/api/deps.py` and `app/api/v1/router.py`
+  - [x] Wire `/api/v1` routing and create minimal router aggregation without implementing registration/login endpoints yet
+  - [x] Add `/health` and `/ready` endpoints as part of the operational baseline
+- [x] Implement environment-based configuration and shared core utilities (AC: 2, 3)
+  - [x] Create `app/core/config.py` using `pydantic-settings` and environment variables
+  - [x] Provide `.env` and `.env.example` with the minimum required settings for local development
+  - [x] Create `app/core/response.py` and `app/core/exceptions.py` for the standardized API envelope and centralized exception mapping
+  - [x] Create `app/core/logging.py` for structured logging primitives that avoid secrets and raw tokens
+- [x] Implement persistence foundations for identity work (AC: 2)
+  - [x] Create `app/db/base.py` and `app/db/session.py` for SQLAlchemy async base metadata, engine, and session lifecycle
+  - [x] Initialize Alembic and configure it for the project database connection
+  - [x] Create the initial user persistence shape needed by auth foundations (`app/models/user.py`) aligned with the `users` table contract
+  - [x] Keep transaction ownership in the service layer and persistence access in repositories only
+- [x] Implement base security utilities without delivering auth endpoints yet (AC: 3, 4)
+  - [x] Create `app/core/security.py` for password hashing helpers and JWT encode/decode primitives
+  - [x] Define shared auth-related dependencies/guards stubs needed for later protected routes
+  - [x] Align JWT payload handling to include `sub`, `email`, `role`, `iat`, and `exp`
+  - [x] Leave registration and login endpoint/service behavior for Stories 1.2 and 1.3
+- [x] Establish the test and delivery baseline for follow-on stories (AC: 1, 4)
+  - [x] Create `tests/conftest.py` plus initial test package structure mirroring app layers
+  - [x] Add smoke coverage for app startup, health/readiness endpoints, and shared dependency wiring
+  - [x] Add Docker/local runtime scaffolding (`Dockerfile`, `docker-compose.yml`) and CI placeholders consistent with the architecture baseline
 
 ## Dev Notes
 
@@ -173,3 +173,69 @@ so that registration and login can be delivered on a stable backend base.
 - Current repo state: BMAD planning artifacts only; no implementation code exists yet.
 - `docs/` exists but is empty and not a source of implementation constraints.
 - Because there is no prior story implementation, there are no previous dev notes or git patterns to inherit.
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-03-19: Initialized `doitforme-api/` with `uv`, installed the story baseline runtime and test dependencies, and replaced the generated hello-world scaffold with the FastAPI application structure required by Story 1.1.
+- 2026-03-19: Implemented environment-driven settings, standardized API envelopes and exception mapping, structured logging helpers, async SQLAlchemy base/session wiring, user persistence model, security helpers, shared auth dependency stubs, Alembic baseline, Docker scaffolding, and CI placeholder workflow.
+- 2026-03-19: Validated the foundation with `uv run pytest` (5 passed) and `uv run alembic heads` (single migration head). Python LSP diagnostics were unavailable because `basedpyright-langserver` is not installed in this environment.
+
+### Completion Notes
+
+- Delivered the FastAPI backend foundation under `doitforme-api/` with `/api/v1`, `/health`, `/ready`, OpenAPI docs, centralized error handling, and standardized success/error response envelopes.
+- Added PostgreSQL async session management, the initial `users` ORM model and Alembic migration, password hashing and JWT helpers, plus minimal repository/service/auth dependency placeholders that preserve the architecture boundaries without implementing registration or login behavior.
+- Added smoke and wiring tests, Docker/local runtime scaffolding, and a CI placeholder so Stories 1.2 and 1.3 can implement registration and login without restructuring the backend.
+
+## File List
+
+- doitforme-api/.env
+- doitforme-api/.env.example
+- doitforme-api/.github/workflows/ci.yml
+- doitforme-api/.gitignore
+- doitforme-api/.python-version
+- doitforme-api/Dockerfile
+- doitforme-api/README.md
+- doitforme-api/alembic.ini
+- doitforme-api/alembic/env.py
+- doitforme-api/alembic/script.py.mako
+- doitforme-api/alembic/versions/0001_identity_foundation.py
+- doitforme-api/app/__init__.py
+- doitforme-api/app/api/__init__.py
+- doitforme-api/app/api/deps.py
+- doitforme-api/app/api/v1/__init__.py
+- doitforme-api/app/api/v1/router.py
+- doitforme-api/app/core/__init__.py
+- doitforme-api/app/core/config.py
+- doitforme-api/app/core/exceptions.py
+- doitforme-api/app/core/logging.py
+- doitforme-api/app/core/response.py
+- doitforme-api/app/core/security.py
+- doitforme-api/app/db/__init__.py
+- doitforme-api/app/db/base.py
+- doitforme-api/app/db/session.py
+- doitforme-api/app/main.py
+- doitforme-api/app/models/__init__.py
+- doitforme-api/app/models/user.py
+- doitforme-api/app/repositories/__init__.py
+- doitforme-api/app/repositories/user_repository.py
+- doitforme-api/app/schemas/__init__.py
+- doitforme-api/app/schemas/common.py
+- doitforme-api/app/services/__init__.py
+- doitforme-api/app/services/auth_service.py
+- doitforme-api/docker-compose.yml
+- doitforme-api/pyproject.toml
+- doitforme-api/tests/__init__.py
+- doitforme-api/tests/api/__init__.py
+- doitforme-api/tests/api/test_health.py
+- doitforme-api/tests/conftest.py
+- doitforme-api/tests/repositories/__init__.py
+- doitforme-api/tests/repositories/test_wiring.py
+- doitforme-api/tests/services/__init__.py
+- doitforme-api/tests/services/test_auth_service.py
+- doitforme-api/uv.lock
+
+## Change Log
+
+- 2026-03-19: Implemented Story 1.1 identity service foundation, including the project scaffold, shared FastAPI core, persistence/security baseline, Alembic migration, smoke tests, Docker scaffolding, and CI placeholder.
