@@ -307,4 +307,511 @@ So that I can access protected platform features.
 **Then** the authentication flow is ready for subsequent logout and protected-profile stories
 **And** tests cover successful login, invalid credentials, and invalid request payloads
 
+### Story 1.4: Log Out and Revoke Session Access
+
+As an authenticated user,
+I want to log out securely,
+So that my session is no longer active on the platform.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated user has an active session
+**When** they call the logout endpoint with valid authentication context
+**Then** the API completes the logout flow successfully
+**And** returns a standardized success response
+
+**Given** the platform contract includes logout behavior
+**When** logout is implemented
+**Then** the backend invalidates or revokes the current session according to the chosen token/session strategy
+**And** the resulting behavior is consistent with the architecture's persistent-session expectations
+
+**Given** a user has logged out successfully
+**When** they attempt to continue using the invalidated session in a way the backend can enforce
+**Then** protected access is rejected
+**And** the API returns the appropriate authentication error response
+
+**Given** a logout request is made without valid authentication
+**When** the request is processed
+**Then** the API returns an unauthorized error using the standardized error envelope
+**And** no session state is changed for any other user
+
+**Given** logout is part of the shared auth lifecycle
+**When** the endpoint is implemented
+**Then** router logic remains thin and the revocation/invalidation behavior is handled through shared auth services or dependencies
+**And** the flow does not duplicate authorization logic outside the established auth boundary
+
+**Given** Story 1.4 completes the basic session lifecycle
+**When** the story is finished
+**Then** the platform is ready for authenticated profile access stories
+**And** tests cover successful logout, unauthorized logout attempts, and post-logout access rejection where applicable
+
+### Story 1.5: View and Update My Profile
+
+As an authenticated user,
+I want to view and update my profile information,
+So that my account details stay accurate.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated user has a valid session
+**When** they request their own profile
+**Then** the API returns their profile details using the standardized success envelope
+**And** the response includes the trust-related fields required by the product such as name, role, rating, and completed-task count
+
+**Given** an authenticated user submits valid changes to editable profile fields
+**When** the update request is processed
+**Then** the user's profile is updated successfully
+**And** non-editable or protected fields remain unchanged
+
+**Given** a profile update request contains invalid or malformed data
+**When** the API validates the payload
+**Then** the request is rejected with a validation error using the standardized error envelope
+**And** no partial invalid update is persisted
+
+**Given** profile access is user-scoped
+**When** a user attempts to modify another user's profile through the self-profile flow
+**Then** the API rejects the request according to the ownership and authorization rules
+**And** no unauthorized profile change occurs
+
+**Given** Epic 1 requires profile trust information to support later marketplace flows
+**When** Story 1.5 is completed
+**Then** user profile read/update capabilities are available for authenticated use
+**And** tests cover successful profile retrieval, successful profile update, invalid payload handling, and unauthorized modification attempts
+
+### Story 1.6: View Another User's Public Profile and Trust Signals
+
+As a platform user,
+I want to view another user's public profile, rating, and completed-task stats,
+So that I can decide whether to trust them.
+
+**Acceptance Criteria:**
+
+**Given** a user is allowed to view public trust information for another platform user
+**When** they request another user's public profile
+**Then** the API returns the supported public profile fields using the standardized success envelope
+**And** the response includes rating and completed-task statistics needed for trust decisions
+
+**Given** the requested user does not exist
+**When** the public profile request is processed
+**Then** the API returns a not-found error using the standardized error envelope
+**And** no internal user information is leaked
+
+**Given** public profile access must still respect privacy boundaries
+**When** another user's profile is returned
+**Then** private or security-sensitive fields are excluded from the response
+**And** only the intended public trust-oriented data is exposed
+
+**Given** Story 1.6 completes the identity and trust epic
+**When** the story is finished
+**Then** Epic 1 fully supports user access, self-profile management, and public trust visibility
+**And** tests cover successful public profile retrieval, not-found handling, and exclusion of non-public fields
+
+## Epic 2: Task Posting & Discovery
+
+Task posters can publish tasks and performers can discover nearby work opportunities with enough context to decide whether to engage.
+
+### Story 2.1: Create a New Task
+
+As a task poster,
+I want to create a new task with title, description, location, and initial price,
+So that I can request help from nearby performers.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated poster submits a valid task payload
+**When** the create task request is processed
+**Then** a new task is stored with its required core fields and default open status
+**And** the response returns the created task using the standardized success envelope
+
+**Given** a create task request is missing required fields or contains invalid values
+**When** validation occurs
+**Then** the API rejects the request with a validation error
+**And** no task record is created
+
+**Given** task creation is subject to platform limits
+**When** a user exceeds the allowed task creation threshold
+**Then** the API rejects the request according to the rate-limit and business rules
+**And** the user receives an appropriate error response
+
+### Story 2.2: View My Posted Tasks and Task Details
+
+As a task poster,
+I want to view my posted tasks and inspect individual task details,
+So that I can manage the work I have requested.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated poster has created one or more tasks
+**When** they request their task list
+**Then** the API returns the tasks associated with that poster
+**And** each task includes the current status and key summary fields
+
+**Given** an authenticated poster requests a specific task they own
+**When** the detail request is processed
+**Then** the API returns the task details successfully
+**And** the response follows the standardized success envelope
+
+**Given** a user requests a task they are not permitted to access through the owner flow
+**When** the API evaluates the request
+**Then** access is rejected according to ownership and authorization rules
+**And** no unauthorized task data is returned
+
+### Story 2.3: Cancel an Open Task
+
+As a task poster,
+I want to cancel an open task,
+So that I can withdraw work that is no longer needed.
+
+**Acceptance Criteria:**
+
+**Given** a poster owns an open task
+**When** they submit a cancel action
+**Then** the task status changes to cancelled
+**And** the updated task is returned using the standardized success envelope
+
+**Given** a task is no longer in a cancellable state
+**When** the poster attempts to cancel it
+**Then** the API rejects the request with a business-rule error
+**And** the task state remains unchanged
+
+### Story 2.4: Discover Nearby Available Tasks
+
+As a task performer,
+I want to view a list of nearby available tasks,
+So that I can find work opportunities relevant to my location.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated performer requests available tasks with location context
+**When** the discovery endpoint is called
+**Then** the API returns open tasks filtered by proximity
+**And** the response completes within the required performance target under normal conditions
+
+**Given** nearby tasks are returned to a performer
+**When** the task list is presented by the API
+**Then** each item includes essential information such as title, distance, poster identity/trust signal, and current price
+**And** the payload follows the standardized success envelope
+
+**Given** no tasks match the discovery criteria
+**When** the request is processed
+**Then** the API returns an empty successful result set
+**And** no error is raised for the absence of matching tasks
+
+### Story 2.5: View Detailed Task Information Before Acceptance
+
+As a task performer,
+I want to view the full details of an available task,
+So that I can decide whether to accept or negotiate it.
+
+**Acceptance Criteria:**
+
+**Given** a performer requests an available task detail view
+**When** the task exists and is visible to them
+**Then** the API returns the complete supported task detail payload
+**And** it includes the fields needed to evaluate the job before taking action
+
+**Given** a requested task does not exist or is not available to the requester
+**When** the detail request is processed
+**Then** the API returns the appropriate not-found or forbidden-style error
+**And** the response uses the standardized error envelope
+
+## Epic 3: Task Negotiation & Assignment
+
+Posters and performers can agree on who will do a task and at what price, resulting in an accepted assignment.
+
+### Story 3.1: Accept a Task at the Posted Price
+
+As a task performer,
+I want to accept an open task at the posted price,
+So that I can secure the job immediately.
+
+**Acceptance Criteria:**
+
+**Given** an open task is available to a performer
+**When** the performer accepts it at the posted price
+**Then** the task is assigned according to the business rules
+**And** the task status and accepted performer data are updated consistently
+
+**Given** another performer or state change makes the task no longer open
+**When** an acceptance attempt occurs
+**Then** the API rejects the request with a business-rule error
+**And** no conflicting assignment is created
+
+### Story 3.2: Submit a Counter-Offer Proposal
+
+As a task performer,
+I want to propose a different price for a task,
+So that I can negotiate terms before accepting the work.
+
+**Acceptance Criteria:**
+
+**Given** an eligible open task is available for negotiation
+**When** the performer submits a valid counter-offer
+**Then** the proposal is stored and linked to the task and performer
+**And** the poster can later review it
+
+**Given** the proposal payload is invalid or the task is not negotiable
+**When** the request is processed
+**Then** the API rejects the request appropriately
+**And** no invalid proposal is created
+
+### Story 3.3: Review and Decide on Task Proposals
+
+As a task poster,
+I want to view proposals and accept or reject them,
+So that I can choose the best performer and price.
+
+**Acceptance Criteria:**
+
+**Given** a poster owns a task with submitted proposals
+**When** they request the proposal list
+**Then** the API returns the proposals associated with the task
+**And** each proposal contains the data needed for decision-making
+
+**Given** a poster accepts a valid proposal
+**When** the acceptance action is processed
+**Then** the performer is locked in and the task status changes to the assigned/accepted state
+**And** conflicting future assignment attempts are prevented
+
+**Given** a poster rejects a proposal
+**When** the rejection is processed
+**Then** the proposal state is updated accordingly
+**And** the task remains available unless another valid acceptance occurs
+
+## Epic 4: Task Communication & Execution
+
+Once a task is accepted, both parties can communicate, track task progress, and move the task toward completion.
+
+### Story 4.1: Send and Retrieve Task Messages
+
+As a participant in an accepted task,
+I want to send and read task-scoped messages,
+So that I can coordinate task details with the other party.
+
+**Acceptance Criteria:**
+
+**Given** a user is one of the two participants on an accepted task
+**When** they send a valid message
+**Then** the message is stored chronologically under that task conversation
+**And** the API returns a standardized success response
+
+**Given** a participant requests the conversation history
+**When** the request is processed
+**Then** the API returns task-scoped messages in chronological order
+**And** only authorized participants can access that conversation
+
+**Given** a non-participant requests task messages
+**When** authorization is evaluated
+**Then** access is rejected according to task participation rules
+**And** no conversation data is exposed
+
+### Story 4.2: View Active Conversations
+
+As a user with accepted tasks,
+I want to view my active task conversations,
+So that I can quickly access ongoing work discussions.
+
+**Acceptance Criteria:**
+
+**Given** a user participates in one or more accepted-task conversations
+**When** they request their active conversations
+**Then** the API returns the conversation/task list associated with that user
+**And** each conversation includes enough context to identify the related task and counterpart
+
+**Given** a user has no active conversations
+**When** the request is processed
+**Then** the API returns an empty successful result
+**And** no error is raised
+
+### Story 4.3: Support Near-Real-Time Message Visibility
+
+As a task participant,
+I want new messages to appear in near-real-time,
+So that coordination feels responsive.
+
+**Acceptance Criteria:**
+
+**Given** the MVP architecture uses polling rather than WebSockets
+**When** a participant requests message updates using the supported polling contract
+**Then** the API returns new or changed conversation data since the prior request point
+**And** the behavior supports the near-real-time requirement within the agreed architecture constraints
+
+**Given** the polling contract is used repeatedly
+**When** the endpoint is exercised under normal usage
+**Then** it respects the defined rate-limiting and response-format rules
+**And** it remains compatible with future task update polling patterns
+
+### Story 4.4: Mark a Task as Completed
+
+As a task poster,
+I want to mark an accepted or in-progress task as completed,
+So that the platform can move the task into settlement and rating flows.
+
+**Acceptance Criteria:**
+
+**Given** a poster owns a task in a completable state
+**When** they mark it as completed
+**Then** the task status changes to completed according to business rules
+**And** the result is returned using the standardized success envelope
+
+**Given** a task is not in a completable state or the requester lacks authority
+**When** the completion request is processed
+**Then** the API rejects the request appropriately
+**And** the task status remains unchanged
+
+## Epic 5: Simulated Payments & Completion
+
+The platform can hold, release, and display simulated payments and payment history around task completion.
+
+### Story 5.1: Hold Simulated Payment on Task Acceptance
+
+As the platform,
+I want a simulated payment hold recorded when a task is accepted,
+So that the task can move through a realistic escrow-style flow.
+
+**Acceptance Criteria:**
+
+**Given** a task is accepted successfully
+**When** the payment hold flow is triggered
+**Then** a payment record is created or updated with the held state and agreed amount
+**And** both the task and payment state remain consistent
+
+**Given** the payment hold cannot be created because business or state rules are not met
+**When** the hold flow is attempted
+**Then** the API rejects the operation appropriately
+**And** inconsistent partial settlement state is not persisted
+
+### Story 5.2: Display Payment Status and Amount to Participants
+
+As a task participant,
+I want to see the task payment amount and settlement status,
+So that I understand the current transaction state.
+
+**Acceptance Criteria:**
+
+**Given** a task has associated payment state
+**When** an authorized participant views the task/payment details
+**Then** the API returns the supported payment amount and status fields clearly
+**And** unauthorized users cannot view another user's payment history or restricted payment data
+
+### Story 5.3: Release Payment on Task Completion
+
+As the platform,
+I want simulated payment released when a task is completed,
+So that the performer receives completion confirmation.
+
+**Acceptance Criteria:**
+
+**Given** a task has been completed and has a held payment state
+**When** payment release is triggered according to the workflow
+**Then** the payment state changes to released
+**And** the updated settlement result is persisted consistently
+
+**Given** a release is attempted for a task not eligible for settlement
+**When** the request is processed
+**Then** the API rejects the operation with a business-rule error
+**And** payment state remains unchanged
+
+### Story 5.4: View User Payment History
+
+As a user,
+I want to view my payment history,
+So that I can track earnings or spending on completed tasks.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated user requests their payment history
+**When** the request is processed
+**Then** the API returns only the payment records visible to that user
+**And** the response uses the standardized success envelope
+
+**Given** a user attempts to access another user's payment history
+**When** authorization is evaluated
+**Then** access is rejected
+**And** payment data remains isolated per user
+
+## Epic 6: Ratings, Reputation & Admin Oversight
+
+Users can build reputation after completed work, while admins can monitor and manage platform health and interventions.
+
+### Story 6.1: Rate the Other Party After Task Completion
+
+As a task participant,
+I want to submit a 1-5 star rating with an optional comment after completion,
+So that trust can be built across the marketplace.
+
+**Acceptance Criteria:**
+
+**Given** a task is completed and the requester is one of the two task participants
+**When** they submit a valid rating for the other party
+**Then** the rating is stored with the supported score and optional comment
+**And** the rating is linked to the task, rater, and rated user
+
+**Given** a rating request violates task state, participant rules, or payload validation
+**When** the request is processed
+**Then** the API rejects the request appropriately
+**And** no invalid rating is created
+
+### Story 6.2: View Ratings and Reputation on User Profiles
+
+As a platform user,
+I want profile trust data to reflect ratings received,
+So that I can evaluate reliability before engaging with someone.
+
+**Acceptance Criteria:**
+
+**Given** ratings exist for a user
+**When** their public or self profile is requested through supported profile views
+**Then** the returned profile includes the average rating and completed-task trust statistics
+**And** users can access the list of ratings they have received where the product requires it
+
+### Story 6.3: View Platform Dashboard Metrics
+
+As an admin,
+I want to view platform metrics and operational summaries,
+So that I can monitor platform health.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated admin requests the dashboard
+**When** the request is processed
+**Then** the API returns platform statistics including task totals, completion rate, registered users, and average rating or active-user metrics as supported
+**And** the response uses the standardized success envelope
+
+**Given** a non-admin requests admin dashboard data
+**When** authorization is evaluated
+**Then** access is rejected
+**And** no admin-only metrics are exposed
+
+### Story 6.4: View Users, Tasks, and Moderation Detail as Admin
+
+As an admin,
+I want to inspect users, tasks, and task-associated messages,
+So that I can monitor platform activity and moderate issues.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated admin requests user, task, or moderation views
+**When** the request is processed
+**Then** the API returns the supported administrative lists and detail views for users, tasks, and task-associated messages
+**And** the data is restricted to admin-authorized access only
+
+### Story 6.5: Manually Adjust or Release Payment as Admin
+
+As an admin,
+I want to manually intervene in payment state when needed,
+So that exceptional settlement issues can be resolved.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated admin performs a supported payment intervention
+**When** the request is valid and the targeted payment exists
+**Then** the payment state is updated according to the admin action
+**And** the change is persisted in a way that remains consistent with task and payment history
+
+**Given** a non-admin or invalid request attempts the same action
+**When** authorization or validation is evaluated
+**Then** the API rejects the request appropriately
+**And** no unauthorized settlement change occurs
+
 <!-- End story repeat -->
