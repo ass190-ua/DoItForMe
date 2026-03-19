@@ -23,3 +23,18 @@ class UserRepository:
     async def get_by_id(self, user_id: UUID) -> User | None:
         result = await self.session.execute(select(User).where(User.user_id == user_id))
         return result.scalar_one_or_none()
+
+    async def update_profile(
+        self,
+        user: User,
+        *,
+        name: str,
+        latitude,
+        longitude,
+    ) -> User:
+        user.name = name
+        user.latitude = latitude
+        user.longitude = longitude
+        await self.session.flush()
+        await self.session.refresh(user)
+        return user

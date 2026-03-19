@@ -1,3 +1,6 @@
+import hashlib
+from uuid import uuid4
+
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -19,8 +22,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
+def hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 def create_access_token(
-    *, subject: str, email: str, role: str, expires_delta: timedelta | None = None
+    *,
+    subject: str,
+    email: str,
+    role: str,
+    token_type: str,
+    token_id: str | None = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     settings = get_settings()
     now = datetime.now(UTC)
@@ -31,6 +44,8 @@ def create_access_token(
         "sub": subject,
         "email": email,
         "role": role,
+        "token_type": token_type,
+        "jti": token_id or str(uuid4()),
         "iat": int(now.timestamp()),
         "exp": int(expire_at.timestamp()),
     }
@@ -49,7 +64,7 @@ def decode_token(token: str) -> dict[str, Any]:
         raise AppException(
             code="INVALID_TOKEN", message="Token is invalid or expired", status_code=401
         ) from exc
-    required_fields = {"sub", "email", "role", "iat", "exp"}
+    required_fields = {"sub", "email", "role", "token_type", "jti", "iat", "exp"}
     if not required_fields.issubset(payload):
         raise AppException(
             code="INVALID_TOKEN", message="Token payload is incomplete", status_code=401

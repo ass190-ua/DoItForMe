@@ -38,6 +38,29 @@ class TestLoginValidation:
         assert body["success"] is False
         assert body["error"]["code"] == "VALIDATION_ERROR"
 
+
+class TestLogoutValidation:
+    client = TestClient(fastapi_app)
+
+    def test_logout_requires_authorization_header(self):
+        response = self.client.post("/api/v1/auth/logout")
+
+        assert response.status_code == 401
+        body = response.json()
+        assert body["success"] is False
+        assert body["error"]["code"] == "AUTHENTICATION_REQUIRED"
+
+    def test_logout_rejects_invalid_auth_header(self):
+        response = self.client.post(
+            "/api/v1/auth/logout",
+            headers={"Authorization": "Token something"},
+        )
+
+        assert response.status_code == 401
+        body = response.json()
+        assert body["success"] is False
+        assert body["error"]["code"] == "INVALID_AUTH_HEADER"
+
     def test_login_missing_required_fields(self):
         payload = {"email": "some@example.com"}
         response = self.client.post("/api/v1/auth/login", json=payload)
