@@ -1,8 +1,11 @@
 import pytest
-from httpx import AsyncClient
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
+from app.core.security import hash_password
 from app.main import app as fastapi_app
+from app.models.user import User, UserRole
+from app.repositories.user_repository import UserRepository
 
 
 class TestRegisterValidation:
@@ -16,6 +19,28 @@ class TestRegisterValidation:
             "role": "poster",
         }
         response = self.client.post("/api/v1/auth/register", json=payload)
+
+        assert response.status_code == 422
+        body = response.json()
+        assert body["success"] is False
+        assert body["error"]["code"] == "VALIDATION_ERROR"
+
+
+class TestLoginValidation:
+    client = TestClient(fastapi_app)
+
+    def test_login_invalid_email(self):
+        payload = {"email": "not-an-email", "password": "securepassword123"}
+        response = self.client.post("/api/v1/auth/login", json=payload)
+
+        assert response.status_code == 422
+        body = response.json()
+        assert body["success"] is False
+        assert body["error"]["code"] == "VALIDATION_ERROR"
+
+    def test_login_missing_required_fields(self):
+        payload = {"email": "some@example.com"}
+        response = self.client.post("/api/v1/auth/login", json=payload)
 
         assert response.status_code == 422
         body = response.json()
@@ -126,6 +151,64 @@ async def test_register_role_performer(async_client: AsyncClient):
     assert body["data"]["user"]["role"] == "performer"
 
 
-from app.core.security import hash_password
-from app.models.user import User, UserRole
-from app.repositories.user_repository import UserRepository
+@pytest.mark.skip(reason="requires live PostgreSQL database")
+@pytest.mark.asyncio
+async def test_login_success(async_client: AsyncClient, session):
+    existing = User(
+        email="login@example.com",
+        password_hash=hash_password("securepassword123"),
+        name="Login User",
+        role=UserRole.POSTER,
+    )
+    repo = UserRepository(session)
+    await repo.create(existing)
+    await session.commit()
+
+    payload = {"email": "login@example.com", "password": "securepassword123"}
+    response = await async_client.post("/api/v1/auth/login", json=payload)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"]["user"]["email"] == "login@example.com"
+    assert body["data"]["user"]["role"] == "poster"
+    assert body["data"]["access_token"]
+    assert body["data"]["refresh_token"]
+    assert body["data"]["token_type"] == "bearer"
+    assert body["error"] is None
+
+
+@pytest.mark.skip(reason="requires live PostgreSQL database")
+@pytest.mark.asyncio
+async def test_login_invalid_credentials(async_client: AsyncClient, session):
+    existing = User(
+        email="existing-login@example.com",
+        password_hash=hash_password("rightpassword123"),
+        name="Existing Login User",
+        role=UserRole.PERFORMER,
+    )
+    repo = UserRepository(session)
+    await repo.create(existing)
+    await session.commit()
+
+    bad_password_response = await async_client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "existing-login@example.com",
+            "password": "wrongpassword123",
+        },
+    )
+    unknown_email_response = await async_client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "missing-login@example.com",
+            "password": "wrongpassword123",
+        },
+    )
+
+    for response in (bad_password_response, unknown_email_response):
+        assert response.status_code == 401
+        body = response.json()
+        assert body["success"] is False
+        assert body["error"]["code"] == "INVALID_CREDENTIALS"
+        assert body["error"]["message"] == "Invalid email or password"

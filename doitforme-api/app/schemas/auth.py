@@ -30,3 +30,15 @@ class UserPublic(BaseModel):
 
 class RegisterResponse(BaseModel):
     user: UserPublic
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1)
+
+
+class LoginResponse(BaseModel):
+    user: UserPublic
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"

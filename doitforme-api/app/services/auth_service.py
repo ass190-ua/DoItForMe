@@ -1,15 +1,18 @@
+from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AppException
-from app.core.security import hash_password
+from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import RegisterRequest, UserPublic
+from app.schemas.auth import LoginRequest, LoginResponse, RegisterRequest, UserPublic
 
 
 PASSWORD_POLICY_MESSAGE = "Password must be at least 8 characters"
+INVALID_CREDENTIALS_MESSAGE = "Invalid email or password"
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
 class AuthService:
@@ -49,6 +52,33 @@ class AuthService:
         await self.session.commit()
 
         return UserPublic.model_validate(created)
+
+    async def login(self, data: LoginRequest) -> LoginResponse:
+        user = await self.user_repository.get_by_email(data.email)
+        if user is None or not verify_password(data.password, user.password_hash):
+            raise AppException(
+                code="INVALID_CREDENTIALS",
+                message=INVALID_CREDENTIALS_MESSAGE,
+                status_code=401,
+            )
+
+        access_token = create_access_token(
+            subject=str(user.user_id),
+            email=user.email,
+            role=user.role.value,
+        )
+        refresh_token = create_access_token(
+            subject=str(user.user_id),
+            email=user.email,
+            role=user.role.value,
+            expires_delta=timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+
+        return LoginResponse(
+            user=UserPublic.model_validate(user),
+            access_token=access_token,
+            refresh_token=refresh_token,
+        )
 
     async def get_user_by_id(self, user_id: UUID) -> User | None:
         return await self.user_repository.get_by_id(user_id)
