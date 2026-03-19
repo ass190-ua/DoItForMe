@@ -2,12 +2,14 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from app.api.v1 import auth as auth_router_module
+from app.api.v1 import tasks as tasks_router_module
 from app.api.v1 import users as users_router_module
 from app.core.response import success_response
 
 
 router = APIRouter()
 router.include_router(auth_router_module.router, prefix="/auth", tags=["auth"])
+router.include_router(tasks_router_module.router, prefix="/tasks", tags=["tasks"])
 router.include_router(users_router_module.router, prefix="/users", tags=["users"])
 
 
