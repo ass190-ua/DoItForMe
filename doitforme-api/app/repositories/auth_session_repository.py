@@ -11,6 +11,13 @@ class AuthSessionRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
+    @staticmethod
+    def _active_session_filters() -> tuple:
+        return (
+            AuthSession.revoked_at.is_(None),
+            AuthSession.expires_at > datetime.now(UTC),
+        )
+
     async def create(self, auth_session: AuthSession) -> AuthSession:
         self.session.add(auth_session)
         await self.session.flush()
@@ -21,7 +28,7 @@ class AuthSessionRepository:
         result = await self.session.execute(
             select(AuthSession).where(
                 AuthSession.access_jti == access_jti,
-                AuthSession.revoked_at.is_(None),
+                *self._active_session_filters(),
             )
         )
         return result.scalar_one_or_none()
@@ -39,7 +46,7 @@ class AuthSessionRepository:
         result = await self.session.execute(
             select(AuthSession).where(
                 AuthSession.refresh_jti == refresh_jti,
-                AuthSession.revoked_at.is_(None),
+                *self._active_session_filters(),
             )
         )
         return result.scalar_one_or_none()
@@ -48,7 +55,7 @@ class AuthSessionRepository:
         result = await self.session.execute(
             select(AuthSession).where(
                 AuthSession.user_id == user_id,
-                AuthSession.revoked_at.is_(None),
+                *self._active_session_filters(),
             )
         )
         return list(result.scalars().all())

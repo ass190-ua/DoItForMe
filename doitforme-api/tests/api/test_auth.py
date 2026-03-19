@@ -1,11 +1,15 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
-from app.core.security import hash_password
+from app.core.security import create_access_token, hash_password, hash_token
 from app.main import app as fastapi_app
+from app.models.auth_session import AuthSession
 from app.models.user import User, UserRole
 from app.repositories.user_repository import UserRepository
+from app.services import auth_service as auth_service_module
 
 
 class TestRegisterValidation:
@@ -174,14 +178,18 @@ async def test_register_role_performer(async_client: AsyncClient):
     assert body["data"]["user"]["role"] == "performer"
 
 
-@pytest.mark.skip(reason="requires live PostgreSQL database")
 @pytest.mark.asyncio
-async def test_login_success(async_client: AsyncClient, session):
+async def test_login_success(async_client: AsyncClient, session, monkeypatch):
     existing = User(
         email="login@example.com",
-        password_hash=hash_password("securepassword123"),
+        password_hash="stored-hash",
         name="Login User",
         role=UserRole.POSTER,
+    )
+    monkeypatch.setattr(
+        auth_service_module,
+        "verify_password",
+        lambda plain, hashed: plain == "securepassword123" and hashed == "stored-hash",
     )
     repo = UserRepository(session)
     await repo.create(existing)
@@ -201,14 +209,20 @@ async def test_login_success(async_client: AsyncClient, session):
     assert body["error"] is None
 
 
-@pytest.mark.skip(reason="requires live PostgreSQL database")
 @pytest.mark.asyncio
-async def test_login_invalid_credentials(async_client: AsyncClient, session):
+async def test_login_invalid_credentials(
+    async_client: AsyncClient, session, monkeypatch
+):
     existing = User(
         email="existing-login@example.com",
-        password_hash=hash_password("rightpassword123"),
+        password_hash="stored-hash",
         name="Existing Login User",
         role=UserRole.PERFORMER,
+    )
+    monkeypatch.setattr(
+        auth_service_module,
+        "verify_password",
+        lambda plain, hashed: plain == "rightpassword123" and hashed == "stored-hash",
     )
     repo = UserRepository(session)
     await repo.create(existing)
@@ -235,3 +249,59 @@ async def test_login_invalid_credentials(async_client: AsyncClient, session):
         assert body["success"] is False
         assert body["error"]["code"] == "INVALID_CREDENTIALS"
         assert body["error"]["message"] == "Invalid email or password"
+
+
+@pytest.mark.asyncio
+async def test_login_invalid_payload(async_client: AsyncClient):
+    response = await async_client.post(
+        "/api/v1/auth/login",
+        json={"email": "not-an-email", "password": "securepassword123"},
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["success"] is False
+    assert body["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.asyncio
+async def test_logout_rejects_expired_session(async_client: AsyncClient, session):
+    existing = User(
+        email="expired-session@example.com",
+        password_hash="stored-hash",
+        name="Expired Session User",
+        role=UserRole.POSTER,
+    )
+    repo = UserRepository(session)
+    created_user = await repo.create(existing)
+    await session.flush()
+
+    access_jti = "expired-access-jti"
+    access_token = create_access_token(
+        subject=str(created_user.user_id),
+        email=created_user.email,
+        role=created_user.role.value,
+        token_type="access",
+        token_id=access_jti,
+        expires_delta=timedelta(minutes=5),
+    )
+    expired_session = AuthSession(
+        user_id=created_user.user_id,
+        access_jti=access_jti,
+        refresh_jti="expired-refresh-jti",
+        refresh_token_hash=hash_token("expired-refresh-token"),
+        expires_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    session.add(expired_session)
+    await session.commit()
+
+    response = await async_client.post(
+        "/api/v1/auth/logout",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert response.status_code == 401
+    body = response.json()
+    assert body["success"] is False
+    assert body["error"]["code"] == "INVALID_TOKEN"
+    assert body["error"]["message"] == "Session is no longer active"

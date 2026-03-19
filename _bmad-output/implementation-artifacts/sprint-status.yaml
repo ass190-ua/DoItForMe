@@ -45,10 +45,10 @@ development_status:
   epic-1: in-progress
   1-1-establish-identity-service-foundation: done
   1-2-register-user-account: review
-  1-3-log-in-and-receive-session-tokens: review
-  1-4-log-out-and-revoke-session-access: backlog
-  1-5-view-and-update-my-profile: backlog
-  1-6-view-another-users-public-profile-and-trust-signals: backlog
+  1-3-log-in-and-receive-session-tokens: done
+  1-4-log-out-and-revoke-session-access: review
+  1-5-view-and-update-my-profile: ready-for-dev
+  1-6-view-another-users-public-profile-and-trust-signals: ready-for-dev
   epic-1-retrospective: optional
 
   epic-2: backlog

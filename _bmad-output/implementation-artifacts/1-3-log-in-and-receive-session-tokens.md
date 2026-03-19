@@ -1,6 +1,6 @@
 # Story 1.3: Log In and Receive Session Tokens
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
