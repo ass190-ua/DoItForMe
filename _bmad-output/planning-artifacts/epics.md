@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ["step-01-extraction-confirmed", "step-02-epics-approved"]
+stepsCompleted: ["step-01-extraction-confirmed", "step-02-epics-approved", "correct-course-2026-03-19"]
 inputDocuments: ["_bmad-output/prd.md", "_bmad-output/planning-artifacts/architecture.md"]
 ---
 
@@ -178,48 +178,35 @@ Users can register, sign in, manage their profile, and establish identity and tr
 
 <!-- Repeat for each story (M = 1, 2, 3...) within epic N -->
 
-### Story 1.1: Initialize FastAPI Service Foundation
+### Story 1.1: Establish Identity Service Foundation
 
-As a developer,
-I want the backend service scaffolded with configuration, database connectivity, migrations, and shared API conventions,
-So that all future identity features can be built consistently.
+As a new platform user,
+I want the identity service foundation to be available,
+So that registration and login can be delivered on a stable backend base.
+
+**Implements:** FR1, FR2 (enabling foundation)
 
 **Acceptance Criteria:**
 
-**Given** the repository is still at the pre-implementation stage
-**When** the service foundation is created
-**Then** a FastAPI project scaffold exists using the agreed Python + FastAPI + `uv` setup
-**And** the project structure matches the architecture document for `app/api/v1`, `app/core`, `app/db`, `app/models`, `app/schemas`, `app/services`, `app/repositories`, and `tests`
+**Given** Epic 1 begins with identity capabilities
+**When** the first story is implemented
+**Then** the backend provides the minimum service foundation required to support registration and login
+**And** that foundation follows the agreed FastAPI architecture and project structure
 
-**Given** the service foundation is being established
-**When** application configuration is implemented
-**Then** environment-driven settings are loaded through `pydantic-settings`
-**And** local configuration can be supplied through `.env` without hardcoding secrets
+**Given** identity features require configuration and persistence support
+**When** the foundation is established
+**Then** environment-based configuration, database session management, and migration support are available
+**And** only the minimum infrastructure needed for identity features is introduced
 
-**Given** the service foundation includes persistence setup
-**When** the database layer is prepared
-**Then** PostgreSQL connectivity is configured with SQLAlchemy async and `asyncpg`
-**And** an async session pattern is available for future repositories and services
+**Given** future identity endpoints must behave consistently
+**When** the shared application layer is prepared
+**Then** API versioning, standardized response/error handling, and base security utilities are available
+**And** registration and login behavior remains deferred to subsequent stories
 
-**Given** schema evolution must be controlled from the start
-**When** migrations are initialized
-**Then** Alembic is configured in the project
-**And** the project is ready to create and run migrations for only the tables needed by future stories
-
-**Given** future endpoints must behave consistently
-**When** shared API behavior is established
-**Then** the application includes the standard API success/error response envelope and centralized exception handling
-**And** the main API router is versioned under `/api/v1`
-
-**Given** authentication is part of the agreed architecture
-**When** the initial security foundation is created
-**Then** the project includes the base security utilities needed for password hashing and JWT token support
-**And** the full registration/login behavior remains deferred to later stories in this epic
-
-**Given** implementation quality must support future agent work
-**When** the foundation story is completed
-**Then** the codebase includes the initial test configuration and health/readiness endpoints
-**And** the foundation is sufficient for Story 1.2 to implement user registration without restructuring the project
+**Given** the story should enable immediate follow-on user value
+**When** Story 1.1 is completed
+**Then** Story 1.2 can implement user registration without restructuring the project
+**And** Story 1.3 can implement login using the same shared foundation
 
 ### Story 1.2: Register User Account
 
