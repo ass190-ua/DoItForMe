@@ -1,6 +1,6 @@
 # Story 1.5: View and Update My Profile
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -20,28 +20,28 @@ So that my account details stay accurate.
 
 ## Tasks / Subtasks
 
-- [ ] Define self-profile schemas and response contracts (AC: 1, 2, 3)
-  - [ ] Add or extend `app/schemas/user.py` with self-profile read/update request and response models using `snake_case`
-  - [ ] Ensure self-profile responses include supported trust-related fields such as rating, rating count, and completed-task count without exposing security-sensitive data
-- [ ] Implement authenticated self-profile retrieval (AC: 1, 4, 5)
-  - [ ] Add a thin authenticated self-profile route under `app/api/v1/users.py` or the canonical users router defined by the architecture
-  - [ ] Reuse the shared auth dependency path so self-profile access is derived from the current authenticated user rather than arbitrary user identifiers
-  - [ ] Return the standardized success envelope through shared response utilities
-- [ ] Implement authenticated self-profile update behavior (AC: 2, 3, 4)
-  - [ ] Restrict updates to editable profile fields only
-  - [ ] Prevent modification of protected fields such as identity, role, ratings, and other trust statistics through the self-update payload
-  - [ ] Keep persistence orchestration inside the service layer and leave repositories persistence-only
-- [ ] Preserve ownership and authorization rules (AC: 4)
-  - [ ] Ensure the self-profile flow cannot be used to modify another user's profile
-  - [ ] Keep authorization and ownership enforcement inside the established auth and service boundaries
-- [ ] Add focused test coverage for authenticated profile flows (AC: 1, 2, 3, 4, 5)
-  - [ ] Add API coverage for successful self-profile retrieval
-  - [ ] Add API coverage for successful self-profile update
-  - [ ] Add API coverage for invalid payload handling
-  - [ ] Add API or service coverage for unauthorized modification attempts or protected-field update rejection
-- [ ] Validate readiness for public-profile trust stories (AC: 1, 5)
-  - [ ] Confirm the self-profile response shape stays compatible with upcoming public-profile and trust-signal stories
-  - [ ] Keep user-domain boundaries stable for Story 1.6 and later rating visibility work
+- [x] Define self-profile schemas and response contracts (AC: 1, 2, 3)
+  - [x] Add or extend `app/schemas/user.py` with self-profile read/update request and response models using `snake_case`
+  - [x] Ensure self-profile responses include supported trust-related fields such as rating, rating count, and completed-task count without exposing security-sensitive data
+- [x] Implement authenticated self-profile retrieval (AC: 1, 4, 5)
+  - [x] Add a thin authenticated self-profile route under `app/api/v1/users.py` or the canonical users router defined by the architecture
+  - [x] Reuse the shared auth dependency path so self-profile access is derived from the current authenticated user rather than arbitrary user identifiers
+  - [x] Return the standardized success envelope through shared response utilities
+- [x] Implement authenticated self-profile update behavior (AC: 2, 3, 4)
+  - [x] Restrict updates to editable profile fields only
+  - [x] Prevent modification of protected fields such as identity, role, ratings, and other trust statistics through the self-update payload
+  - [x] Keep persistence orchestration inside the service layer and leave repositories persistence-only
+- [x] Preserve ownership and authorization rules (AC: 4)
+  - [x] Ensure the self-profile flow cannot be used to modify another user's profile
+  - [x] Keep authorization and ownership enforcement inside the established auth and service boundaries
+- [x] Add focused test coverage for authenticated profile flows (AC: 1, 2, 3, 4, 5)
+  - [x] Add API coverage for successful self-profile retrieval
+  - [x] Add API coverage for successful self-profile update
+  - [x] Add API coverage for invalid payload handling
+  - [x] Add API or service coverage for unauthorized modification attempts or protected-field update rejection
+- [x] Validate readiness for public-profile trust stories (AC: 1, 5)
+  - [x] Confirm the self-profile response shape stays compatible with upcoming public-profile and trust-signal stories
+  - [x] Keep user-domain boundaries stable for Story 1.6 and later rating visibility work
 
 ## Dev Notes
 
@@ -134,11 +134,12 @@ So that my account details stay accurate.
 
 ### Debug Log
 
-- Not started. This artifact was created to make Story 1.5 implementation-ready in the same style as Stories 1.3 and 1.4.
+- 2026-03-19: Confirmed implemented self-profile routes, service logic, and schema boundary in the users module.
+- 2026-03-19: Added runnable API coverage for self-profile retrieval, update success, invalid payload handling, and protected-field override rejection.
 
 ### Completion Notes
 
-- No implementation has been recorded in this artifact yet.
+- Verified authenticated self-profile retrieval and update flows with passing API and service tests.
 
 ## File List
 
@@ -154,3 +155,4 @@ So that my account details stay accurate.
 ## Change Log
 
 - 2026-03-19: Created Story 1.5 implementation artifact from planning, contract, architecture, and schema documents.
+- 2026-03-19: Marked Story 1.5 done after passing acceptance-proof API and service coverage.

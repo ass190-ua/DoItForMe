@@ -1,6 +1,6 @@
 # Story 1.6: View Another User's Public Profile and Trust Signals
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -19,23 +19,23 @@ So that I can decide whether to trust them.
 
 ## Tasks / Subtasks
 
-- [ ] Define public-profile schemas and response contracts (AC: 1, 2, 3)
-  - [ ] Add or extend `app/schemas/user.py` with public-profile response models using `snake_case`
-  - [ ] Ensure the public profile contract includes supported trust fields such as name, role, rating, rating count, and completed-task statistics while excluding private fields
-- [ ] Implement public-profile retrieval behavior (AC: 1, 2, 3)
-  - [ ] Add a public or appropriately authorized users route for fetching another user's profile through the users module
-  - [ ] Reuse a shared user service for profile lookup, response shaping, and not-found handling
-  - [ ] Return the standardized success envelope through shared response utilities
-- [ ] Preserve privacy and trust boundaries (AC: 1, 2, 3)
-  - [ ] Exclude private or security-sensitive fields such as email, password-related data, and internal-only attributes from public responses
-  - [ ] Keep trust-related fields aligned with the product requirements for rating visibility and completed-task statistics
-- [ ] Add focused test coverage for public-profile access (AC: 1, 2, 3, 4)
-  - [ ] Add API coverage for successful public profile retrieval
-  - [ ] Add API coverage for not-found handling when the requested user does not exist
-  - [ ] Add assertions that non-public fields are excluded from the response
-- [ ] Validate readiness for later ratings and reputation stories (AC: 1, 4)
-  - [ ] Confirm the public-profile response shape stays compatible with later rating-history and reputation stories
-  - [ ] Keep trust-signal aggregation boundaries stable for future rating visibility work
+- [x] Define public-profile schemas and response contracts (AC: 1, 2, 3)
+  - [x] Add or extend `app/schemas/user.py` with public-profile response models using `snake_case`
+  - [x] Ensure the public profile contract includes supported trust fields such as name, role, rating, rating count, and completed-task statistics while excluding private fields
+- [x] Implement public-profile retrieval behavior (AC: 1, 2, 3)
+  - [x] Add a public or appropriately authorized users route for fetching another user's profile through the users module
+  - [x] Reuse a shared user service for profile lookup, response shaping, and not-found handling
+  - [x] Return the standardized success envelope through shared response utilities
+- [x] Preserve privacy and trust boundaries (AC: 1, 2, 3)
+  - [x] Exclude private or security-sensitive fields such as email, password-related data, and internal-only attributes from public responses
+  - [x] Keep trust-related fields aligned with the product requirements for rating visibility and completed-task statistics
+- [x] Add focused test coverage for public-profile access (AC: 1, 2, 3, 4)
+  - [x] Add API coverage for successful public profile retrieval
+  - [x] Add API coverage for not-found handling when the requested user does not exist
+  - [x] Add assertions that non-public fields are excluded from the response
+- [x] Validate readiness for later ratings and reputation stories (AC: 1, 4)
+  - [x] Confirm the public-profile response shape stays compatible with later rating-history and reputation stories
+  - [x] Keep trust-signal aggregation boundaries stable for future rating visibility work
 
 ## Dev Notes
 
@@ -126,11 +126,12 @@ So that I can decide whether to trust them.
 
 ### Debug Log
 
-- Not started. This artifact was created to make Story 1.6 implementation-ready in the same style as Stories 1.3 through 1.5.
+- 2026-03-19: Confirmed implemented public-profile route, service logic, and privacy-oriented schema boundary in the users module.
+- 2026-03-19: Added runnable API coverage for public-profile success, not-found handling, and exclusion of non-public fields.
 
 ### Completion Notes
 
-- No implementation has been recorded in this artifact yet.
+- Verified public-profile retrieval behavior with passing API and service tests, including trust fields and privacy-safe response shape.
 
 ## File List
 
@@ -146,3 +147,4 @@ So that I can decide whether to trust them.
 ## Change Log
 
 - 2026-03-19: Created Story 1.6 implementation artifact from planning, contract, architecture, and schema documents.
+- 2026-03-19: Marked Story 1.6 done after passing acceptance-proof API and service coverage.

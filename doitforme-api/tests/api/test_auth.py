@@ -1,15 +1,40 @@
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
+from app.api.deps import db_session_dependency
+from app.core.exceptions import AppException
 from app.core.security import create_access_token, hash_password, hash_token
 from app.main import app as fastapi_app
-from app.models.auth_session import AuthSession
-from app.models.user import User, UserRole
-from app.repositories.user_repository import UserRepository
+from app.models.user import UserRole
+from app.repositories.auth_session_repository import AuthSessionRepository
 from app.services import auth_service as auth_service_module
+from app.services.auth_service import AuthService
+from app.schemas.auth import LoginResponse, LogoutResponse, UserPublic
+
+
+class DummySession:
+    async def commit(self):
+        return None
+
+
+async def override_db_session():
+    yield DummySession()
+
+
+def build_access_token(*, subject: str, email: str, role: str, jti: str) -> str:
+    return create_access_token(
+        subject=subject,
+        email=email,
+        role=role,
+        token_type="access",
+        token_id=jti,
+        expires_delta=timedelta(minutes=30),
+    )
 
 
 class TestRegisterValidation:
@@ -179,24 +204,25 @@ async def test_register_role_performer(async_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_login_success(async_client: AsyncClient, session, monkeypatch):
-    existing = User(
-        email="login@example.com",
-        password_hash="stored-hash",
-        name="Login User",
-        role=UserRole.POSTER,
-    )
-    monkeypatch.setattr(
-        auth_service_module,
-        "verify_password",
-        lambda plain, hashed: plain == "securepassword123" and hashed == "stored-hash",
-    )
-    repo = UserRepository(session)
-    await repo.create(existing)
-    await session.commit()
+async def test_login_success(async_client: AsyncClient, monkeypatch):
+    async def fake_login(self, data):
+        return LoginResponse(
+            user=UserPublic(
+                user_id=uuid4(),
+                email=data.email,
+                name="Login User",
+                role="poster",
+            ),
+            access_token="access-token",
+            refresh_token="refresh-token",
+        )
 
-    payload = {"email": "login@example.com", "password": "securepassword123"}
-    response = await async_client.post("/api/v1/auth/login", json=payload)
+    monkeypatch.setattr(AuthService, "login", fake_login)
+
+    response = await async_client.post(
+        "/api/v1/auth/login",
+        json={"email": "login@example.com", "password": "securepassword123"},
+    )
 
     assert response.status_code == 200
     body = response.json()
@@ -210,23 +236,15 @@ async def test_login_success(async_client: AsyncClient, session, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_login_invalid_credentials(
-    async_client: AsyncClient, session, monkeypatch
-):
-    existing = User(
-        email="existing-login@example.com",
-        password_hash="stored-hash",
-        name="Existing Login User",
-        role=UserRole.PERFORMER,
-    )
-    monkeypatch.setattr(
-        auth_service_module,
-        "verify_password",
-        lambda plain, hashed: plain == "rightpassword123" and hashed == "stored-hash",
-    )
-    repo = UserRepository(session)
-    await repo.create(existing)
-    await session.commit()
+async def test_login_invalid_credentials(async_client: AsyncClient, monkeypatch):
+    async def fake_login(self, data):
+        raise AppException(
+            code="INVALID_CREDENTIALS",
+            message="Invalid email or password",
+            status_code=401,
+        )
+
+    monkeypatch.setattr(AuthService, "login", fake_login)
 
     bad_password_response = await async_client.post(
         "/api/v1/auth/login",
@@ -265,43 +283,121 @@ async def test_login_invalid_payload(async_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_logout_rejects_expired_session(async_client: AsyncClient, session):
-    existing = User(
+async def test_logout_rejects_expired_session(async_client: AsyncClient, monkeypatch):
+    fastapi_app.dependency_overrides[db_session_dependency] = override_db_session
+
+    async def fake_get_active(self, access_jti):
+        return None
+
+    monkeypatch.setattr(
+        AuthSessionRepository, "get_active_by_access_jti", fake_get_active
+    )
+
+    access_token = build_access_token(
+        subject=str(uuid4()),
         email="expired-session@example.com",
-        password_hash="stored-hash",
-        name="Expired Session User",
-        role=UserRole.POSTER,
+        role="poster",
+        jti="expired-access-jti",
     )
-    repo = UserRepository(session)
-    created_user = await repo.create(existing)
-    await session.flush()
 
-    access_jti = "expired-access-jti"
-    access_token = create_access_token(
-        subject=str(created_user.user_id),
-        email=created_user.email,
-        role=created_user.role.value,
-        token_type="access",
-        token_id=access_jti,
-        expires_delta=timedelta(minutes=5),
-    )
-    expired_session = AuthSession(
-        user_id=created_user.user_id,
-        access_jti=access_jti,
-        refresh_jti="expired-refresh-jti",
-        refresh_token_hash=hash_token("expired-refresh-token"),
-        expires_at=datetime.now(UTC) - timedelta(minutes=1),
-    )
-    session.add(expired_session)
-    await session.commit()
-
-    response = await async_client.post(
-        "/api/v1/auth/logout",
-        headers={"Authorization": f"Bearer {access_token}"},
-    )
+    try:
+        response = await async_client.post(
+            "/api/v1/auth/logout",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    finally:
+        fastapi_app.dependency_overrides.clear()
 
     assert response.status_code == 401
     body = response.json()
+    assert body["success"] is False
+    assert body["error"]["code"] == "INVALID_TOKEN"
+    assert body["error"]["message"] == "Session is no longer active"
+
+
+@pytest.mark.asyncio
+async def test_logout_success(async_client: AsyncClient, monkeypatch):
+    fastapi_app.dependency_overrides[db_session_dependency] = override_db_session
+
+    async def fake_get_active(self, access_jti):
+        return SimpleNamespace(access_jti=access_jti)
+
+    async def fake_revoke(self, access_jti):
+        return SimpleNamespace(access_jti=access_jti, revoked_at=datetime.now(UTC))
+
+    monkeypatch.setattr(
+        AuthSessionRepository, "get_active_by_access_jti", fake_get_active
+    )
+    monkeypatch.setattr(AuthSessionRepository, "revoke_by_access_jti", fake_revoke)
+
+    access_token = build_access_token(
+        subject=str(uuid4()),
+        email="logout-success@example.com",
+        role="poster",
+        jti="logout-success-jti",
+    )
+
+    try:
+        response = await async_client.post(
+            "/api/v1/auth/logout",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    finally:
+        fastapi_app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["data"] == {"message": "Successfully logged out"}
+    assert body["error"] is None
+
+
+@pytest.mark.asyncio
+async def test_logout_revoked_token_cannot_access_protected_route(
+    async_client: AsyncClient, monkeypatch
+):
+    fastapi_app.dependency_overrides[db_session_dependency] = override_db_session
+    active_sessions = {"logout-reuse-jti"}
+
+    async def fake_get_active(self, access_jti):
+        if access_jti in active_sessions:
+            return SimpleNamespace(access_jti=access_jti)
+        return None
+
+    async def fake_revoke(self, access_jti):
+        if access_jti in active_sessions:
+            active_sessions.remove(access_jti)
+            return SimpleNamespace(access_jti=access_jti, revoked_at=datetime.now(UTC))
+        return None
+
+    monkeypatch.setattr(
+        AuthSessionRepository, "get_active_by_access_jti", fake_get_active
+    )
+    monkeypatch.setattr(AuthSessionRepository, "revoke_by_access_jti", fake_revoke)
+
+    access_token = build_access_token(
+        subject=str(uuid4()),
+        email="logout-reuse@example.com",
+        role="poster",
+        jti="logout-reuse-jti",
+    )
+
+    try:
+        logout_response = await async_client.post(
+            "/api/v1/auth/logout",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        assert logout_response.status_code == 200
+
+        profile_response = await async_client.get(
+            "/api/v1/users/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    finally:
+        fastapi_app.dependency_overrides.clear()
+
+    assert profile_response.status_code == 401
+    body = profile_response.json()
     assert body["success"] is False
     assert body["error"]["code"] == "INVALID_TOKEN"
     assert body["error"]["message"] == "Session is no longer active"

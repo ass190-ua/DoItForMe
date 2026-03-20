@@ -1,6 +1,6 @@
 # Story 1.4: Log Out and Revoke Session Access
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -34,10 +34,10 @@ So that my session is no longer active on the platform.
 - [x] Preserve unauthorized request behavior (AC: 4)
   - [x] Keep missing or malformed authorization header handling inside shared auth dependencies
   - [x] Ensure unauthenticated logout attempts do not revoke any unrelated user session
-- [ ] Add focused test coverage for logout lifecycle behavior (AC: 1, 3, 4, 6)
-  - [ ] Add API coverage for successful logout with the standardized success envelope
+- [x] Add focused test coverage for logout lifecycle behavior (AC: 1, 3, 4, 6)
+  - [x] Add API coverage for successful logout with the standardized success envelope
   - [x] Add API coverage for unauthorized logout attempts such as missing or invalid auth headers
-  - [ ] Add API or integration coverage that proves reuse of the invalidated session is rejected after logout
+  - [x] Add API or integration coverage that proves reuse of the invalidated session is rejected after logout
   - [x] Add or retain service-level coverage for revoking an active session and rejecting an inactive session
 - [x] Validate readiness for profile stories (AC: 3, 6)
   - [x] Confirm the logout implementation leaves the auth boundary stable for upcoming authenticated profile access stories
@@ -141,13 +141,13 @@ So that my session is no longer active on the platform.
 
 - 2026-03-19: Documented the existing logout implementation already present in `app/api/v1/auth.py`, `app/services/auth_service.py`, `app/api/deps.py`, and `app/repositories/auth_session_repository.py`.
 - 2026-03-19: Recorded current test evidence: API validation coverage exists for missing and malformed auth headers, service-level coverage exists for active/inactive logout behavior, and an API check exists for expired-session rejection.
-- 2026-03-19: Review context indicates Story 1.4 remains in `review` because clear end-to-end evidence is still missing for successful logout response coverage and post-logout token reuse rejection.
+- 2026-03-19: Added runnable API coverage for successful logout and revoked-token rejection on protected access.
 
 ### Completion Notes
 
 - Delivered `POST /api/v1/auth/logout` with a thin auth router delegating to `AuthService.logout` and standardized success/error envelopes.
 - Shared auth dependencies reject inactive sessions, preserving the established auth boundary for protected requests and follow-on profile stories.
-- Story remains in review because the documentation and prior review evidence still call for stronger end-to-end proof of successful logout response coverage and post-logout rejection behavior.
+- Verified logout success, unauthorized request handling, expired-session rejection, and revoked-token reuse rejection through passing auth API/service tests.
 
 ## File List
 
@@ -162,3 +162,4 @@ So that my session is no longer active on the platform.
 
 - 2026-03-19: Created Story 1.4 implementation artifact from the planning and contract documents.
 - 2026-03-19: Updated Story 1.4 artifact to reflect the current implemented-but-in-review logout state.
+- 2026-03-19: Marked Story 1.4 done after passing acceptance-proof API and service coverage.
