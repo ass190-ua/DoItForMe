@@ -8,6 +8,9 @@ from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
     LogoutResponse,
+    PasswordRecoveryRequest,
+    PasswordResetRequest,
+    PasswordResetResponse,
     RegisterRequest,
     RegisterResponse,
 )
@@ -62,7 +65,38 @@ async def logout(
     current_user: dict[str, str] = Depends(require_authenticated_user),
     session: AsyncSession = Depends(db_session_dependency),
 ) -> JSONResponse:
-    service = AuthService(session)
     logout_response = await service.logout(current_user)
     payload, status_code = success_response(logout_response.model_dump(mode="json"))
+    return JSONResponse(status_code=status_code, content=payload)
+
+
+@router.post(
+    "/password-recovery",
+    response_model=PasswordResetResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Request a password recovery link",
+)
+async def password_recovery(
+    data: PasswordRecoveryRequest,
+    session: AsyncSession = Depends(db_session_dependency),
+) -> JSONResponse:
+    service = AuthService(session)
+    response = await service.password_recovery(data)
+    payload, status_code = success_response(response.model_dump(mode="json"))
+    return JSONResponse(status_code=status_code, content=payload)
+
+
+@router.post(
+    "/password-reset",
+    response_model=PasswordResetResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Reset password using a token",
+)
+async def password_reset(
+    data: PasswordResetRequest,
+    session: AsyncSession = Depends(db_session_dependency),
+) -> JSONResponse:
+    service = AuthService(session)
+    response = await service.password_reset(data)
+    payload, status_code = success_response(response.model_dump(mode="json"))
     return JSONResponse(status_code=status_code, content=payload)

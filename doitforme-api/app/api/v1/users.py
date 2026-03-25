@@ -70,3 +70,23 @@ async def get_public_profile(
         {"profile": profile.model_dump(mode="json")}
     )
     return JSONResponse(status_code=status_code, content=payload)
+
+
+@router.get(
+    "/{user_id}/reviews",
+    status_code=status.HTTP_200_OK,
+    summary="Get user reviews",
+)
+async def get_user_reviews(
+    user_id: UUID,
+    limit: int = 20,
+    offset: int = 0,
+    session: AsyncSession = Depends(db_session_dependency),
+) -> JSONResponse:
+    from app.services.review_service import ReviewService
+    service = ReviewService(session)
+    reviews = await service.get_user_reviews(user_id, limit=limit, offset=offset)
+    payload, status_code = success_response(
+        {"reviews": [r.model_dump(mode="json") for r in reviews]}
+    )
+    return JSONResponse(status_code=status_code, content=payload)

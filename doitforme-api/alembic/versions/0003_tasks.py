@@ -11,13 +11,14 @@ branch_labels = None
 depends_on = None
 
 
-task_status = sa.Enum(
+task_status = postgresql.ENUM(
     "open",
     "accepted",
     "in_progress",
     "completed",
     "cancelled",
     name="task_status",
+    create_type=False,
 )
 
 

@@ -14,6 +14,12 @@ class UserRepository:
         result = await self.session.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
+    async def get_by_reset_token(self, token: str) -> User | None:
+        result = await self.session.execute(
+            select(User).where(User.password_reset_token == token)
+        )
+        return result.scalar_one_or_none()
+
     async def create(self, user: User) -> User:
         self.session.add(user)
         await self.session.flush()
@@ -23,6 +29,19 @@ class UserRepository:
     async def get_by_id(self, user_id: UUID) -> User | None:
         result = await self.session.execute(select(User).where(User.user_id == user_id))
         return result.scalar_one_or_none()
+
+    async def get_for_update(self, user_id: UUID) -> User | None:
+        """Acquire a row-level lock (SELECT ... FOR UPDATE) to prevent
+        concurrent balance modifications on the same user."""
+        result = await self.session.execute(
+            select(User).where(User.user_id == user_id).with_for_update()
+        )
+        return result.scalar_one_or_none()
+
+    async def update(self, user: User) -> User:
+        await self.session.flush()
+        await self.session.refresh(user)
+        return user
 
     async def update_profile(
         self,

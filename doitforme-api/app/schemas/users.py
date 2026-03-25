@@ -12,6 +12,7 @@ class SelfProfile(BaseModel):
     role: str
     latitude: Decimal | None = None
     longitude: Decimal | None = None
+    balance: Decimal
     rating: Decimal
     completed_tasks_count: int
     rating_count: int

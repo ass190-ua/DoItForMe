@@ -10,12 +10,15 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
-
-user_role = sa.Enum("poster", "performer", "admin", name="user_role")
+# Solución: Usar postgresql.ENUM y create_type=False
+user_role = postgresql.ENUM("poster", "performer", "admin", name="user_role", create_type=False)
 
 
 def upgrade() -> None:
+    # 1. Se crea el ENUM de forma segura
     user_role.create(op.get_bind(), checkfirst=True)
+    
+    # 2. Se crea la tabla
     op.create_table(
         "users",
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -60,4 +63,6 @@ def downgrade() -> None:
     op.drop_index("idx_users_role", table_name="users")
     op.drop_index("idx_users_email", table_name="users")
     op.drop_table("users")
+    
+    # Se borra el ENUM al hacer downgrade
     user_role.drop(op.get_bind(), checkfirst=True)

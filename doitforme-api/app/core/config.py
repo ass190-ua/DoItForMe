@@ -27,6 +27,7 @@ class Settings(BaseSettings):
         default=60 * 24 * 7, alias="ACCESS_TOKEN_EXPIRE_MINUTES"
     )
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    upload_dir: str = Field(default="uploads", alias="UPLOAD_DIR")
 
 
 @lru_cache

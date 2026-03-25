@@ -40,8 +40,10 @@ class TestTaskAuthValidation:
             json={
                 "title": "Pick up dry cleaning",
                 "description": "Get my suit from the cleaner",
-                "location": {"latitude": 40.7128, "longitude": -74.0060},
-                "initial_price": 15.00,
+                "location_lat": 40.7128,
+                "location_lng": -74.0060,
+                "address": "123 Clean St",
+                "initial_offer": 15.00,
             },
         )
 
@@ -62,8 +64,10 @@ class TestTaskAuthValidation:
                 json={
                     "title": "",
                     "description": "Get my suit from the cleaner",
-                    "location": {"latitude": 120, "longitude": -74.0060},
-                    "initial_price": -1,
+                    "location_lat": 120,
+                    "location_lng": -74.0060,
+                    "address": "123 Clean St",
+                    "initial_offer": -1,
                 },
             )
         finally:
@@ -86,8 +90,10 @@ class TestTaskAuthValidation:
                 json={
                     "title": "Pick up dry cleaning",
                     "description": "Get my suit from the cleaner",
-                    "location": {"latitude": 40.7128, "longitude": -74.0060},
-                    "initial_price": 15.00,
+                    "location_lat": 40.7128,
+                    "location_lng": -74.0060,
+                    "address": "123 Clean St",
+                    "initial_offer": 15.00,
                 },
             )
         finally:

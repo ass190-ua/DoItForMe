@@ -56,3 +56,15 @@ async def require_authenticated_user(
     payload: dict[str, str] = Depends(get_current_token_payload),
 ) -> dict[str, str]:
     return payload
+
+
+async def require_admin_user(
+    payload: dict[str, str] = Depends(get_current_token_payload),
+) -> dict[str, str]:
+    if payload["role"] != "admin":
+        raise AppException(
+            code="FORBIDDEN_ROLE",
+            message="Admin role is required to access this resource",
+            status_code=403,
+        )
+    return payload

@@ -50,6 +50,7 @@ def build_user():
         role=UserRole.POSTER,
         latitude=Decimal("40.41680000"),
         longitude=Decimal("-3.70380000"),
+        balance=Decimal("100.00"),
         rating=Decimal("4.75"),
         completed_tasks_count=12,
         rating_count=9,

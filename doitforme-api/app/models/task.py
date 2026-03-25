@@ -20,7 +20,9 @@ from app.db.base import Base
 
 
 class TaskStatus(StrEnum):
-    OPEN = "open"
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    NEGOTIATING = "negotiating"
     ACCEPTED = "accepted"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -30,11 +32,11 @@ class TaskStatus(StrEnum):
 class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = (
-        CheckConstraint("initial_price > 0", name="tasks_initial_price_positive"),
-        Index("idx_tasks_created_by", "created_by"),
-        Index("idx_tasks_accepted_by", "accepted_by"),
+        CheckConstraint("initial_offer > 0", name="tasks_initial_offer_positive"),
+        Index("idx_tasks_creator", "creator_id"),
+        Index("idx_tasks_runner", "runner_id"),
         Index("idx_tasks_status", "status"),
-        Index("idx_tasks_location", "latitude", "longitude"),
+        Index("idx_tasks_location", "location_lat", "location_lng"),
         Index("idx_tasks_category", "category"),
         Index("idx_tasks_created_at", "created_at"),
     )
@@ -44,21 +46,32 @@ class Task(Base):
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_by: Mapped[uuid.UUID] = mapped_column(
+    
+    # Usuario que pide el recado
+    creator_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=False
     )
-    accepted_by: Mapped[uuid.UUID | None] = mapped_column(
+    
+    # Usuario que ejecutará el recado
+    runner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=True
     )
+    
     status: Mapped[TaskStatus] = mapped_column(
-        String(20), nullable=False, default=TaskStatus.OPEN
+        String(20), nullable=False, default=TaskStatus.DRAFT
     )
-    latitude: Mapped[Decimal] = mapped_column(Numeric(10, 8), nullable=False)
-    longitude: Mapped[Decimal] = mapped_column(Numeric(11, 8), nullable=False)
+    
+    location_lat: Mapped[Decimal] = mapped_column(Numeric(10, 8), nullable=False)
+    location_lng: Mapped[Decimal] = mapped_column(Numeric(11, 8), nullable=False)
+    address: Mapped[str] = mapped_column(String(255), nullable=False)
+    
     category: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    initial_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    initial_offer: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     accepted_price: Mapped[Decimal | None] = mapped_column(
         Numeric(10, 2), nullable=True
+    )
+    proof_image_url: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
     )
     completion_date: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

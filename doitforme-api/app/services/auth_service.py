@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
@@ -20,6 +20,9 @@ from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
     LogoutResponse,
+    PasswordRecoveryRequest,
+    PasswordResetRequest,
+    PasswordResetResponse,
     RegisterRequest,
     UserPublic,
 )
@@ -137,3 +140,43 @@ class AuthService:
 
     async def get_user_by_id(self, user_id: UUID) -> User | None:
         return await self.user_repository.get_by_id(user_id)
+
+    async def password_recovery(self, data: PasswordRecoveryRequest) -> PasswordResetResponse:
+        user = await self.user_repository.get_by_email(data.email)
+        # We don't want to leak if the email exists, but for the simulation, we'll log the token
+        if user:
+            token = str(uuid4())
+            user.password_reset_token = token
+            user.password_reset_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+            await self.user_repository.update(user)
+            await self.session.commit()
+            # Simulation: In a real app, send an email. Here we just log it or return a generic message.
+            print(f"DEBUG: Password reset token for {data.email}: {token}")
+        
+        return PasswordResetResponse(
+            message="If the email exists, a password reset link has been sent"
+        )
+
+    async def password_reset(self, data: PasswordResetRequest) -> PasswordResetResponse:
+        user = await self.user_repository.get_by_reset_token(data.token)
+        if not user or not user.password_reset_expires_at:
+            raise AppException(
+                code="INVALID_TOKEN", message="Invalid or expired reset token", status_code=400
+            )
+            
+        if datetime.now(timezone.utc) > user.password_reset_expires_at:
+            user.password_reset_token = None
+            user.password_reset_expires_at = None
+            await self.user_repository.update(user)
+            await self.session.commit()
+            raise AppException(
+                code="EXPIRED_TOKEN", message="The reset token has expired", status_code=400
+            )
+            
+        user.password_hash = hash_password(data.new_password)
+        user.password_reset_token = None
+        user.password_reset_expires_at = None
+        await self.user_repository.update(user)
+        await self.session.commit()
+        
+        return PasswordResetResponse(message="Password reset successfully")
