@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, UTC, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
@@ -147,7 +147,7 @@ class AuthService:
         if user:
             token = str(uuid4())
             user.password_reset_token = token
-            user.password_reset_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+            user.password_reset_expires_at = datetime.now(UTC) + timedelta(hours=1)
             await self.user_repository.update(user)
             await self.session.commit()
             # Simulation: In a real app, send an email. Here we just log it or return a generic message.
@@ -164,7 +164,7 @@ class AuthService:
                 code="INVALID_TOKEN", message="Invalid or expired reset token", status_code=400
             )
             
-        if datetime.now(timezone.utc) > user.password_reset_expires_at:
+        if datetime.now(UTC) > user.password_reset_expires_at:
             user.password_reset_token = None
             user.password_reset_expires_at = None
             await self.user_repository.update(user)

@@ -42,6 +42,9 @@ class StubUserRepository:
     async def get_by_id(self, user_id):
         return self.user
 
+    async def get_for_update(self, user_id):
+        return self.user
+
 
 @pytest.mark.asyncio
 async def test_create_review_updates_user_rating():

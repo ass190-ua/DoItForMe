@@ -65,6 +65,7 @@ async def logout(
     current_user: dict[str, str] = Depends(require_authenticated_user),
     session: AsyncSession = Depends(db_session_dependency),
 ) -> JSONResponse:
+    service = AuthService(session)
     logout_response = await service.logout(current_user)
     payload, status_code = success_response(logout_response.model_dump(mode="json"))
     return JSONResponse(status_code=status_code, content=payload)
